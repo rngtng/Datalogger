@@ -4,7 +4,7 @@
 #
 #
 TARGET                 = datalogger
-ARDUINO_LIBS           = ByteBuffer TimerOne SD SD/utility
+ARDUINO_LIBS           = ByteBuffer TimerOne EEPROM SD SD/utility
 ARDUINO_DIR            = /Applications/Arduino.app/Contents/Resources/Java
 AVRDUDE_CONF           = /Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/etc/avrdude.conf
 ARDUINO_LIB_PATH       = ../libraries /Applications/Arduino.app/Contents/Resources/Java/libraries
