@@ -1,7 +1,7 @@
 
 #include <SD.h>
 #include <TimerOne.h>
-#include <ByteBuffer.h>
+//#include <ByteBuffer.h>
 // #include <EEPROM.h>
 
 // #define MEGA_SOFT_SPI 1
@@ -10,17 +10,19 @@
 #define READ_CHAN2 PINB & 0x06 //pins 9, 10
 #define READ_CHAN3 PINC & 0x03 //pins 9, 10
 
-#define SEND_BUFFER_SIZE 10
+#define SEND_BUFFER_SIZE 100
 
 #define MAX_COUNT 200000 //number of Bytes to write MAX: 2M
 
 #define EEPROM_ADR 0
 
 long cnt = 0;
-long input = 0;
+
+long wpointer = 0;
+long rpointer = 0;
 
 File outFile;
-ByteBuffer buffer;
+byte buffer[SEND_BUFFER_SIZE];
 
 char filename[] = "turtleX.log";
 
@@ -34,12 +36,14 @@ void toggle() {
 }
 
 void measure() {
-  buffer[pointer++] = READ_CHAN1;
-  buffer[pointer++] = READ_CHAN3;
-  
-  input += 2;
-  //buffer.put(data);
-  //buffer.put(port);
+  buffer[wpointer++] = READ_CHAN1;
+  if(wpointer >= SEND_BUFFER_SIZE) {
+    wpointer = 0;
+  }
+  //buffer[wpointer++] = READ_CHAN3;
+  //if(wpointer >= SEND_BUFFER_SIZE) {
+  //  wpointer = 0;
+  //}
 }
 
 void setup() {
@@ -63,7 +67,7 @@ void setup() {
 
   toggle();
 
-  buffer.init(SEND_BUFFER_SIZE);
+  // buffer.init(SEND_BUFFER_SIZE);
 
   toggle();
 
@@ -84,7 +88,7 @@ void setup() {
   Timer1.attachInterrupt(measure);
 }
 
-#define WRITE_FLUSH 5
+#define WRITE_FLUSH 1
 
 void loop()
 {
@@ -92,21 +96,16 @@ void loop()
     digitalWrite(A5, HIGH);
     outFile.close();
   }
-  else if(input >= WRITE_FLUSH) {
+  else if(wpointer != rpointer) {
     byte array[WRITE_FLUSH];
     for(int k = 0; k < WRITE_FLUSH; k++) {
-      //array[k] = buffer.get();
-      input --;
+      array[k] = buffer[rpointer++];
+      if(rpointer >= SEND_BUFFER_SIZE) {
+        rpointer = 0;
+      }
     }
     outFile.write(array, WRITE_FLUSH);
-    //outFile.write(1);
     cnt += WRITE_FLUSH;
   }
-  /*
-  else if(buffer.getSize() >= 1) {
-    byte data = buffer.get();
-    outFile.write(data);
-    cnt += 1;
-  }*/
 }
 
