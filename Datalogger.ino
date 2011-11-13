@@ -1,32 +1,23 @@
-
 #include <SD.h>
+#include <EEPROM.h>
 #include <TimerOne.h>
-//#include <ByteBuffer.h>
-// #include <EEPROM.h>
 
+// 270K -> 10s
+// 27K -> 1s
+// 27 -> 1ms
 // #define MEGA_SOFT_SPI 1
 
 #define READ_CHAN1 PIND & 0x0F //pins 0 - 7
 #define READ_CHAN2 PINB & 0x06 //pins 9, 10
 #define READ_CHAN3 PINC & 0x03 //pins 9, 10
 
-#define SEND_BUFFER_SIZE 100
-
-#define MAX_COUNT 200000 //number of Bytes to write MAX: 2M
+#define MAX_CNT 180 //seconds
 
 #define EEPROM_ADR 0
 
-long cnt = 0;
-
-long wpointer = 0;
-long rpointer = 0;
-
 File outFile;
-byte buffer[SEND_BUFFER_SIZE];
-
 char filename[] = "turtleX.log";
-
-int ledState = LOW;
+volatile long cnt = 0;
 
 void toggle() {
   digitalWrite(A5, HIGH);
@@ -35,15 +26,8 @@ void toggle() {
   delay(100);
 }
 
-void measure() {
-  buffer[wpointer++] = READ_CHAN1;
-  if(wpointer >= SEND_BUFFER_SIZE) {
-    wpointer = 0;
-  }
-  //buffer[wpointer++] = READ_CHAN3;
-  //if(wpointer >= SEND_BUFFER_SIZE) {
-  //  wpointer = 0;
-  //}
+void stopRecording() {
+  cnt++;
 }
 
 void setup() {
@@ -61,51 +45,29 @@ void setup() {
 
   toggle();
 
-  //int value = EEPROM.read(EEPROM_ADR);
-  filename[6] = '0'; //value + 48; //add 48 to make it ASCII
-  //EEPROM.write(EEPROM_ADR, ++value);
-
-  toggle();
-
-  // buffer.init(SEND_BUFFER_SIZE);
-
-  toggle();
+  int value = EEPROM.read(EEPROM_ADR);
+  filename[6] = value + 48; //add 48 to make it ASCII
+  EEPROM.write(EEPROM_ADR, ++value);
 
   SD.begin(8);
 
-  toggle();
-
-  if(SD.exists(filename)) {
-    SD.remove(filename);
-  }
   outFile = SD.open(filename, O_WRITE | O_CREAT);
 
-  toggle();
-
-  //prepare Timer
-  //Timer1.initialize(20); // microseconds -> 0.02ms period -> 50kHz
-  Timer1.initialize(50); // microseconds -> 0.02ms period -> 50kHz
-  Timer1.attachInterrupt(measure);
+  Timer1.initialize();
+  Timer1.attachInterrupt(stopRecording);
 }
-
-#define WRITE_FLUSH 1
 
 void loop()
 {
-  if(cnt >= MAX_COUNT ) {
-    digitalWrite(A5, HIGH);
+  if(cnt >= MAX_CNT) {
     outFile.close();
-  }
-  else if(wpointer != rpointer) {
-    byte array[WRITE_FLUSH];
-    for(int k = 0; k < WRITE_FLUSH; k++) {
-      array[k] = buffer[rpointer++];
-      if(rpointer >= SEND_BUFFER_SIZE) {
-        rpointer = 0;
-      }
-    }
-    outFile.write(array, WRITE_FLUSH);
-    cnt += WRITE_FLUSH;
+    digitalWrite(A5, HIGH);
+  } else {
+    byte port = READ_CHAN3;
+    byte data = READ_CHAN1;
+    //byte port = READ_CHAN2;
+    outFile.write(port);
+    outFile.write(data);
   }
 }
 

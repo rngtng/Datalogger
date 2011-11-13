@@ -8,9 +8,8 @@ class Array
   end
 end
 
-file = "turtle2.log"
+file = "turtle1.log"
 
-=begin
 content = open(file, "rb") {|io| io.read }
 
 oline = nil
@@ -27,7 +26,7 @@ File.open("d_#{file}", 'w') do |f|
     end
   end
 end
-=end
+
 
 odata = []
 File.open("d2_#{file}", "w") do |f|
