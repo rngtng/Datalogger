@@ -27,6 +27,7 @@ void toggle() {
 }
 
 void stopRecording() {
+  toggle();
   cnt++;
 }
 
@@ -46,7 +47,9 @@ void setup() {
   toggle();
 
   int value = EEPROM.read(EEPROM_ADR);
-  filename[6] = value + 48; //add 48 to make it ASCII
+  if( value >= 0 && value <= 90 ) {
+    filename[6] = value + 65; //add 48 to make it ASCII
+  }
   EEPROM.write(EEPROM_ADR, ++value);
 
   SD.begin(8);
