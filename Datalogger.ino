@@ -2,22 +2,21 @@
 #include <EEPROM.h>
 #include <TimerOne.h>
 
-// 270K -> 10s
-// 27K -> 1s
-// 27 -> 1ms
-// #define MEGA_SOFT_SPI 1
+#define INIT_CHAN1 DDRD = DDRD & (0x0F - 0x0F) //init pins as INPUT
+#define INIT_CHAN2 DDRB = DDRB & (0x0F - 0x06)
+#define INIT_CHAN3 DDRC = DDRC & (0x0F - 0x03)
 
 #define READ_CHAN1 PIND & 0x0F //pins 0 - 7
 #define READ_CHAN2 PINB & 0x06 //pins 9, 10
-#define READ_CHAN3 PINC & 0x03 //pins 9, 10
-
-#define MAX_CNT 180 //seconds
+#define READ_CHAN3 PINC & 0x03 //pins A0, A1
 
 #define EEPROM_ADR 0
+#define MAX_CNT 60 //seconds
 
 File outFile;
 char filename[] = "turtleX.log";
 volatile long cnt = 0;
+byte data[2];
 
 void toggle() {
   digitalWrite(A5, HIGH);
@@ -33,12 +32,8 @@ void stopRecording() {
 
 void setup() {
   //EEPROM.write(EEPROM_ADR, 0);
-
-  DDRD = 0; //init pins as INPUT
-  //pinMode(9, INPUT);
-  //pinMode(10, INPUT);
-  pinMode(A0, INPUT);
-  pinMode(A1, INPUT);
+  INIT_CHAN1;
+  INIT_CHAN3;
 
   pinMode(A4, OUTPUT);
   digitalWrite(A4, LOW);
@@ -60,17 +55,15 @@ void setup() {
   Timer1.attachInterrupt(stopRecording);
 }
 
-void loop()
-{
+void loop() {
   if(cnt >= MAX_CNT) {
     outFile.close();
+    outFile = SD.open(filename, O_WRITE | O_CREAT);
     digitalWrite(A5, HIGH);
   } else {
-    byte port = READ_CHAN3;
-    byte data = READ_CHAN1;
-    //byte port = READ_CHAN2;
-    outFile.write(port);
-    outFile.write(data);
+    data[0] = READ_CHAN3;
+    data[1] = READ_CHAN1;
+    outFile.write(data, 2);
   }
 }
 
