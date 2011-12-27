@@ -1,61 +1,68 @@
-#include <SD.h>
-#include <EEPROM.h>
+// Ported to SdFat from the native Arduino SD library example by Bill Greiman
+// On the Ethernet Shield, CS is pin 4. SdFat handles setting SS
+const int chipSelect = 8;
+/*
+ SD card read/write
+
+ This example shows how to read and write data to and from an SD card file
+ The circuit:
+ * SD card attached to SPI bus as follows:
+ ** MOSI - pin 11
+ ** MISO - pin 12
+ ** CLK - pin 13
+ ** CS - pin 4
+
+ created   Nov 2010
+ by David A. Mellis
+ updated 2 Dec 2010
+ by Tom Igoe
+ modified by Bill Greiman 11 Apr 2011
+ This example code is in the public domain.
+
+ */
+#include <SdFat.h>
 #include <TimerOne.h>
 
-#define INIT_CHAN1 DDRD = DDRD & (0x0F - 0x0F) //init pins as INPUT
-#define INIT_CHAN2 DDRB = DDRB & (0x0F - 0x06)
-#define INIT_CHAN3 DDRC = DDRC & (0x0F - 0x03)
+#define INIT_CHAN1 DDRD = DDRD //init pins as INPUT
+#define INIT_CHAN2 DDRB = DDRB & (0xFF - 0x06)
+#define INIT_CHAN3 DDRC = DDRC & (0xFF - 0x3F)
 
-#define READ_CHAN1 PIND & 0x0F //pins 0 - 7
+#define READ_CHAN1 PIND //pins 0 - 7
 #define READ_CHAN2 PINB & 0x06 //pins 9, 10
-#define READ_CHAN3 PINC & 0x03 //pins A0, A1
+#define READ_CHAN3 PINC //pins A0, A1
 
-#define EEPROM_ADR 0
-#define MAX_CNT 10 //seconds
+#define MAX_CNT 300 //seconds
 
-File outFile;
-char filename[] = "turtleX.log";
+SdFat sd;
+SdFile outFile;
 volatile long cnt = 0;
-byte data[2];
+char filename[] = "tX.log";
+byte data[5];
+int value = 0;
 
-void toggle() {
-  digitalWrite(A5, HIGH);
-  delay(100);
-  digitalWrite(A5, LOW);
-  delay(100);
+void of(){
+  if( value >= 0 && value <= 90 ) {
+    filename[1] = value + 65;
+    value++;
+  }
+  if (!outFile.open(filename, O_RDWR | O_CREAT | O_TRUNC)) {
+    sd.errorHalt("opening test.txt for write failed");
+  }
 }
 
 void stopRecording() {
-  toggle();
+  //toggle();
   cnt++;
 }
 
 void setup() {
-  Serial.begin(9600);
-  EEPROM.write(EEPROM_ADR, 0);
+  // Serial.begin(9600);
   INIT_CHAN1;
   INIT_CHAN3;
 
-  pinMode(A4, OUTPUT);
-  digitalWrite(A4, LOW);
-  pinMode(A5, OUTPUT);
-  
-  // 294036, 267922, 268220, 268802
-  // 299518, 282732, 282638, 282626
-  // 319434, 291270, 290844, 290818
-  // 312052 ,342916, 343622, 344096, 343554, 342270
-  
-  toggle();
+  if (!sd.init(SPI_FULL_SPEED, chipSelect)) sd.initErrorHalt();
 
-  int value = EEPROM.read(EEPROM_ADR);
-  if( value >= 0 && value <= 90 ) {
-    filename[6] = value + 65; //add 48 to make it ASCII
-  }
-  EEPROM.write(EEPROM_ADR, ++value);
-
-  SD.begin(8);
-
-  outFile = SD.open(filename, O_WRITE | O_CREAT | O_TRUNC);
+  of();
 
   Timer1.initialize();
   Timer1.attachInterrupt(stopRecording);
@@ -63,11 +70,10 @@ void setup() {
 
 void loop() {
   if(cnt >= MAX_CNT) {
-    unsigned long s = outFile.size();
-    Serial.println(s);
+    unsigned long s = outFile.fileSize();
+    //Serial.println(s);
     outFile.close();
-    outFile = SD.open(filename, O_WRITE | O_CREAT | O_TRUNC);
-    digitalWrite(A5, HIGH);
+    of();
     cnt = 0;
   } else {
     data[0] = READ_CHAN3;
@@ -75,4 +81,5 @@ void loop() {
     outFile.write(data, 2);
   }
 }
+
 
