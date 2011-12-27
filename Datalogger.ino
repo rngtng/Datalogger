@@ -11,7 +11,7 @@
 #define READ_CHAN3 PINC & 0x03 //pins A0, A1
 
 #define EEPROM_ADR 0
-#define MAX_CNT 60 //seconds
+#define MAX_CNT 10 //seconds
 
 File outFile;
 char filename[] = "turtleX.log";
@@ -31,14 +31,20 @@ void stopRecording() {
 }
 
 void setup() {
-  //EEPROM.write(EEPROM_ADR, 0);
+  Serial.begin(9600);
+  EEPROM.write(EEPROM_ADR, 0);
   INIT_CHAN1;
   INIT_CHAN3;
 
   pinMode(A4, OUTPUT);
   digitalWrite(A4, LOW);
   pinMode(A5, OUTPUT);
-
+  
+  // 294036, 267922, 268220, 268802
+  // 299518, 282732, 282638, 282626
+  // 319434, 291270, 290844, 290818
+  // 312052 ,342916, 343622, 344096, 343554, 342270
+  
   toggle();
 
   int value = EEPROM.read(EEPROM_ADR);
@@ -49,7 +55,7 @@ void setup() {
 
   SD.begin(8);
 
-  outFile = SD.open(filename, O_WRITE | O_CREAT);
+  outFile = SD.open(filename, O_WRITE | O_CREAT | O_TRUNC);
 
   Timer1.initialize();
   Timer1.attachInterrupt(stopRecording);
@@ -57,9 +63,12 @@ void setup() {
 
 void loop() {
   if(cnt >= MAX_CNT) {
+    unsigned long s = outFile.size();
+    Serial.println(s);
     outFile.close();
-    outFile = SD.open(filename, O_WRITE | O_CREAT);
+    outFile = SD.open(filename, O_WRITE | O_CREAT | O_TRUNC);
     digitalWrite(A5, HIGH);
+    cnt = 0;
   } else {
     data[0] = READ_CHAN3;
     data[1] = READ_CHAN1;
