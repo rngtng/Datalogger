@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+ARGV << (File.dirname(__FILE__) + '/../data/ALL.log') if ARGV.size == 0
+
+ARGV.each do |file|
+  new_file = file.gsub(File.extname(file), ".txt")
+  last_line = []
+  anz = 0
+  content = open(file, "rb") {|io| io.read }
+
+  File.open(new_file, 'w') do |out|
+    (0...content.size).step(2) do |cnt|
+      data  = content[cnt + 1].to_i
+      reset = (content[cnt].to_i & 0x01)
+      clk   = (content[cnt].to_i & 0x02) >> 1
+      st    = (content[cnt].to_i & 0x10) >> 4
+      busy  = (content[cnt] & 0x20) >> 5
+
+      line = [reset, clk, st, busy, " ", data, " ", data >> 4, data & 0x0F]
+      if line != last_line
+        out.puts( (last_line << anz).join(",") )
+        last_line = line
+        anz = 1
+      else
+        anz += 1
+      end
+    end
+  end
+end

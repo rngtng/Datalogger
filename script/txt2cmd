@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+
+file = ARGV[0] || File.dirname(__FILE__) + '/../data/All.txt'
+new_file = file.gsub(File.extname(file), ".cmd")
+
+cmd = []
+File.open(new_file, 'w') do |out|
+  File.open(file, 'r').each_line do |line|
+    reset, clk, st, busy, _, data, _, dataH , dataL, anz = line.split(',')
+
+    if st.to_i == 1 && clk.to_i == 1
+      # puts [data, dataH, dataL].join(",")
+      cmd << data
+    end
+
+    if st.to_i == 0 && cmd.any?
+      out.puts cmd.join(',')
+      cmd = []
+    end
+  end
+end
