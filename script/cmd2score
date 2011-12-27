@@ -10,7 +10,7 @@ File.open(new_file, 'w') do |out|
     if (1 + Array(data).size) == size.to_i
       case cmd.to_i
         when 12
-          puts data.map { |d| [d.to_i >> 4, d.to_i & 0x0F] }.flatten.join
+          out.puts data.map { |d| [d.to_i >> 4, d.to_i & 0x0F] }.flatten.join
         else
           puts cmd
       end
