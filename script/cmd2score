@@ -3,16 +3,15 @@
 file = ARGV[0] || File.dirname(__FILE__) + '/../data/All.cmd'
 new_file = file.gsub(File.extname(file), ".sco")
 
-cmd = []
 File.open(new_file, 'w') do |out|
   File.open(file, 'r').each_line do |line|
-    size, cmd, *data = line.strip.split(',')
+    size, op_code, *data = line.strip.split(',')
     if (1 + Array(data).size) == size.to_i
-      case cmd.to_i
+      case op_code.to_i
         when 12
           out.puts data.map { |d| [d.to_i >> 4, d.to_i & 0x0F] }.flatten.join
         else
-          puts cmd
+          puts op_code
       end
     end
 
